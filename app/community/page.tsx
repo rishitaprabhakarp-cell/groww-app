@@ -1,21 +1,28 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Bell, User, Radio, UserPlus, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Bell, User, Radio, UserPlus, Sparkles, Send, X, Pencil } from "lucide-react";
 import FeedCard from "@/components/FeedCard";
 import JargonBuster from "@/components/JargonBuster";
 import { fetchFeedEvents, incrementKudos } from "@/lib/supabase-data";
+import { mockFeedEvents } from "@/lib/mockData";
 import { cn } from "@/lib/utils";
 import type { FeedEvent } from "@/types";
 
-type FilterTab = "all" | "friends" | "milestones" | "streaks";
+type FilterTab = "all" | "milestones" | "streaks";
 
-const FILTER_TABS: { id: FilterTab; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "friends", label: "Friends" },
-  { id: "milestones", label: "Milestones" },
-  { id: "streaks", label: "Streaks" },
+const FILTER_TABS: { id: FilterTab; label: string; emoji: string }[] = [
+  { id: "all", label: "All", emoji: "⚡" },
+  { id: "milestones", label: "Milestones", emoji: "🏆" },
+  { id: "streaks", label: "Streaks", emoji: "🔥" },
+];
+
+const SHARE_TEMPLATES = [
+  { text: "Just hit a new savings milestone! 🎯", type: "milestone" as const },
+  { text: "Day streak going strong 🔥 consistency is key!", type: "streak" as const },
+  { text: "Started a new SIP bucket today 🚀", type: "sip_start" as const },
+  { text: "Micro-investing daily — small steps, big stash 💪", type: "micro_save" as const },
 ];
 
 function filterEvents(events: FeedEvent[], tab: FilterTab): FeedEvent[] {
@@ -30,6 +37,8 @@ export default function CommunityPage() {
   const [feedEvents, setFeedEvents] = useState<FeedEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isJargonOpen, setIsJargonOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareText, setShareText] = useState("");
 
   useEffect(() => {
     fetchFeedEvents()
@@ -40,11 +49,29 @@ export default function CommunityPage() {
   const handleKudos = async (id: string) => {
     const event = feedEvents.find((e) => e.id === id);
     if (!event) return;
-    // Optimistic update
     setFeedEvents((prev) =>
       prev.map((e) => (e.id === id ? { ...e, kudos_count: e.kudos_count + 1 } : e))
     );
     await incrementKudos(id, event.kudos_count);
+  };
+
+  const handleShare = () => {
+    if (!shareText.trim()) return;
+    // Optimistically add to feed
+    const newEvent: FeedEvent = {
+      id: `local-${Date.now()}`,
+      user_id: "me",
+      display_name: "You",
+      avatar_url: "https://api.dicebear.com/9.x/avataaars/svg?seed=me",
+      event_type: "milestone",
+      event_text: shareText,
+      kudos_count: 0,
+      comment_count: 0,
+      created_at: new Date().toISOString(),
+    };
+    setFeedEvents((prev) => [newEvent, ...prev]);
+    setShareText("");
+    setIsShareOpen(false);
   };
 
   const filtered = filterEvents(feedEvents, activeTab);
@@ -67,32 +94,43 @@ export default function CommunityPage() {
         </div>
       </div>
 
-      <div className="px-4 pb-4 space-y-4">
+      <div className="px-4 pb-24 space-y-4">
         {/* Page title */}
-        <div>
-          <div className="flex items-center justify-between mb-0.5">
-            <h2 className="text-2xl font-bold text-white">Squad Pulse</h2>
-            <div className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
-              <Radio className="w-3 h-3 text-green-400 animate-pulse" />
-              <span className="text-xs font-bold text-green-400">LIVE</span>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <h2 className="text-2xl font-bold text-white">Squad Pulse</h2>
+              <div className="flex items-center gap-1 bg-green-500/10 border border-green-500/15 px-2 py-0.5 rounded-lg">
+                <Radio className="w-2.5 h-2.5 text-green-400 animate-pulse" />
+                <span className="text-[10px] font-bold text-green-400 tracking-wider">LIVE</span>
+              </div>
             </div>
+            <p className="text-xs text-white/40">Real-time habits & wins from your tribe</p>
           </div>
-          <p className="text-sm text-white/40">Real-time habits & wins from your tribe</p>
+          {/* Share button */}
+          <button
+            onClick={() => setIsShareOpen(true)}
+            className="flex items-center gap-1.5 bg-[#00d4a0] text-[#0d0d0d] text-xs font-bold px-3 py-2 rounded-xl hover:bg-[#00e8af] transition-colors"
+          >
+            <Pencil className="w-3 h-3" />
+            Share
+          </button>
         </div>
 
-        {/* Filter tabs */}
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+        {/* Filter tabs — dark pill style, on-theme */}
+        <div className="flex gap-2">
           {FILTER_TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all border",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all",
                 activeTab === tab.id
-                  ? "bg-[#00d4a0] text-[#0d0d0d] border-transparent"
-                  : "bg-transparent text-white/50 border-white/10 hover:text-white/80"
+                  ? "bg-[#00d4a0] text-[#0d0d0d]"
+                  : "bg-[#1a1a1a] text-white/50 hover:text-white/80 hover:bg-[#222]"
               )}
             >
+              <span>{tab.emoji}</span>
               {tab.label}
             </button>
           ))}
@@ -116,8 +154,9 @@ export default function CommunityPage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-white/30 text-sm">
-            No events here yet 👀
+          <div className="text-center py-12">
+            <p className="text-white/20 text-3xl mb-3">👀</p>
+            <p className="text-white/40 text-sm">No events here yet</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -132,29 +171,103 @@ export default function CommunityPage() {
           </div>
         )}
 
-        {/* Invite Squad card */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="flex items-center justify-between bg-[#141414] rounded-2xl p-4 border border-white/5"
-        >
+        {/* Invite Squad card — on-theme dark style */}
+        <div className="bg-[#141414] rounded-2xl border border-white/5 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#00d4a0]/15 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-[#00d4a0]/10 flex items-center justify-center">
               <UserPlus className="w-5 h-5 text-[#00d4a0]" />
             </div>
             <div>
               <p className="text-sm font-semibold text-white">Invite your Squad</p>
-              <p className="text-xs text-white/40">
-                Habit streak multiplier unlocks at 3 fri...
-              </p>
+              <p className="text-xs text-white/40">Streak multiplier unlocks at 3 friends</p>
             </div>
           </div>
-          <button className="bg-[#00d4a0] text-[#0d0d0d] text-xs font-bold px-4 py-2 rounded-full hover:bg-[#00e8af] transition-colors">
+          <button className="bg-[#00d4a0]/10 border border-[#00d4a0]/20 text-[#00d4a0] text-xs font-bold px-4 py-2 rounded-xl hover:bg-[#00d4a0]/20 transition-colors">
             Invite
           </button>
-        </motion.div>
+        </div>
       </div>
+
+      {/* Share sheet */}
+      <AnimatePresence>
+        {isShareOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed top-0 left-0 right-0 bg-black/70 z-50"
+              style={{ bottom: "64px" }}
+              onClick={() => setIsShareOpen(false)}
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 400 }}
+              className="fixed left-0 right-0 z-50 bg-[#111111] rounded-t-3xl border-t border-white/10 p-5"
+              style={{ bottom: "64px" }}
+            >
+              <div className="flex justify-center mb-4">
+                <div className="w-10 h-1 bg-white/20 rounded-full" />
+              </div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white font-bold">Share a Win 🎉</h3>
+                <button
+                  onClick={() => setIsShareOpen(false)}
+                  className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-white/50"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Quick templates */}
+              <div className="flex flex-col gap-2 mb-4">
+                {SHARE_TEMPLATES.map((t) => (
+                  <button
+                    key={t.text}
+                    onClick={() => setShareText(t.text)}
+                    className={cn(
+                      "text-left text-xs px-3 py-2.5 rounded-xl border transition-all",
+                      shareText === t.text
+                        ? "bg-[#00d4a0]/10 border-[#00d4a0]/30 text-[#00d4a0]"
+                        : "bg-white/5 border-white/5 text-white/60 hover:text-white/80 hover:bg-white/8"
+                    )}
+                  >
+                    {t.text}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom input */}
+              <div className="flex items-center gap-2 bg-[#1e1e1e] rounded-xl border border-white/10 px-3 py-2 mb-4">
+                <input
+                  type="text"
+                  value={shareText}
+                  onChange={(e) => setShareText(e.target.value)}
+                  placeholder="Or write your own..."
+                  className="flex-1 bg-transparent text-sm text-white placeholder-white/30 outline-none"
+                  onKeyDown={(e) => e.key === "Enter" && handleShare()}
+                />
+              </div>
+
+              <button
+                onClick={handleShare}
+                disabled={!shareText.trim()}
+                className={cn(
+                  "w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all",
+                  shareText.trim()
+                    ? "bg-[#00d4a0] text-[#0d0d0d] hover:bg-[#00e8af]"
+                    : "bg-white/5 text-white/30 cursor-not-allowed"
+                )}
+              >
+                <Send className="w-4 h-4" />
+                Post to Squad
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Floating AI button */}
       <motion.button

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Bell, User, Flame, Flag, TrendingUp, Plus, Sparkles } from "lucide-react";
+import { Bell, User, Flame, Flag, TrendingUp, Plus, Sparkles, ChevronRight } from "lucide-react";
 import GoalBucketCard from "@/components/GoalBucketCard";
 import JargonBuster from "@/components/JargonBuster";
 import CreateGoalModal from "@/components/CreateGoalModal";
@@ -87,7 +87,7 @@ export default function GoalsPage() {
         </div>
       </div>
 
-      <div className="px-4 pb-4 space-y-4">
+      <div className="px-4 pb-24 space-y-4">
         {/* Streak + Next milestone bar */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 bg-orange-500/15 border border-orange-500/20 px-3 py-1.5 rounded-full">
@@ -149,11 +149,30 @@ export default function GoalsPage() {
           ))}
         </div>
 
+        {/* Next milestone card */}
+        <div className="bg-[#141414] rounded-2xl border border-white/5 p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#00d4a0]/10 flex items-center justify-center">
+              <Flag className="w-4 h-4 text-[#00d4a0]" />
+            </div>
+            <div>
+              <p className="text-xs text-white/40 mb-0.5">Next Milestone</p>
+              <p className="text-sm font-semibold text-white">Reach ₹5,000 total stash</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-xs font-bold text-[#00d4a0]">
+              {Math.round((totalStash / 5000) * 100)}%
+            </span>
+            <ChevronRight className="w-4 h-4 text-white/20" />
+          </div>
+        </div>
+
         {/* Create new goal */}
         {goals.length < maxGoals && (
           <button
             onClick={() => setIsCreateOpen(true)}
-            className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-dashed border-white/15 text-white/40 hover:text-white/70 hover:border-white/30 transition-all text-sm font-medium"
+            className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-[#141414] border border-dashed border-[#00d4a0]/20 text-[#00d4a0]/70 hover:text-[#00d4a0] hover:border-[#00d4a0]/40 hover:bg-[#00d4a0]/5 transition-all text-sm font-semibold"
           >
             <Plus className="w-4 h-4" />
             Create New Goal Pot

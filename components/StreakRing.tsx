@@ -6,9 +6,10 @@ interface StreakRingProps {
   currentDay: number;
   totalDays?: number;
   streak: number;
+  daysUntilNext?: number;
 }
 
-export default function StreakRing({ currentDay, totalDays = 7, streak }: StreakRingProps) {
+export default function StreakRing({ currentDay, totalDays = 7, streak, daysUntilNext }: StreakRingProps) {
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
   const progress = (currentDay / totalDays) * circumference;
@@ -57,7 +58,7 @@ export default function StreakRing({ currentDay, totalDays = 7, streak }: Streak
           {streak} Day Streak 🔥
         </h2>
         <p className="text-sm text-white/50 mt-1">
-          {totalDays - currentDay} days until Next Milestone Reward
+          {(daysUntilNext ?? totalDays - currentDay)} days until Next Milestone Reward
         </p>
         <div className="mt-3 inline-flex items-center gap-2 bg-[#00d4a0]/10 text-[#00d4a0] text-xs font-semibold px-3 py-1.5 rounded-full">
           <span>💰</span>

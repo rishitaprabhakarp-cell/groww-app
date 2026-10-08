@@ -22,30 +22,31 @@ export default function LearnPage() {
     getOrCreateUser().then(async (uid) => {
       setUserId(uid);
       const s = await fetchStreak(uid);
-      // Merge with mock badges (badges are stored in DB as jsonb, fall back to mock if empty)
       setStreak({
         ...s,
         badges: s.badges?.length ? s.badges : mockBadges,
       });
-      // Check if already completed today
+      // Only mark quiz done if explicitly completed today (not new users with today's init date)
       const today = new Date().toISOString().split("T")[0];
-      if (s.last_activity_date === today) setQuizCompleted(true);
+      if (s.last_activity_date === today && s.current_streak > 0 && s.xp > 0) {
+        setQuizCompleted(true);
+      }
       setIsLoading(false);
     });
   }, []);
 
   const handleQuizComplete = async (allCorrect: boolean) => {
     setQuizCompleted(true);
-    if (!userId || !allCorrect) return;
-    // Record activity in Supabase and update streak
-    const updated = await recordActivity(userId, mockQuiz.xp_reward);
-    setStreak((s) => ({
-      ...updated,
-      badges: s.badges, // keep local badge display
-    }));
+    if (!userId) return;
+    if (allCorrect) {
+      const updated = await recordActivity(userId, mockQuiz.xp_reward);
+      setStreak((s) => ({ ...updated, badges: s.badges }));
+    }
   };
 
-  const dayOfStreak = Math.min(streak.current_streak % 7 || (streak.current_streak > 0 ? 7 : 0), 7);
+  // Show actual streak day within the 7-day week cycle
+  const dayOfStreak = streak.current_streak === 0 ? 0 : ((streak.current_streak - 1) % 7) + 1;
+  const daysUntilNext = 7 - dayOfStreak;
 
   if (isLoading) {
     return (
@@ -76,12 +77,13 @@ export default function LearnPage() {
         </div>
       </div>
 
-      <div className="px-4 pb-4 space-y-4">
-        {/* Streak Ring */}
+      <div className="px-4 pb-6 space-y-4">
+        {/* Streak Ring — always visible showing 5-day state */}
         <StreakRing
           currentDay={dayOfStreak}
           totalDays={7}
           streak={streak.current_streak}
+          daysUntilNext={daysUntilNext}
         />
 
         {/* XP counter */}
@@ -95,7 +97,7 @@ export default function LearnPage() {
           <span className="text-sm font-bold text-[#00d4a0]">⚡ {streak.xp} XP</span>
         </motion.div>
 
-        {/* Daily Quiz */}
+        {/* Daily Quiz — always shown, never hidden */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
