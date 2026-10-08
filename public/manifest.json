@@ -1,0 +1,17 @@
+{
+  "name": "Groww GenZ",
+  "short_name": "Groww GenZ",
+  "description": "Invest like a GenZ — smart, social, and jargon-free.",
+  "start_url": "/goals",
+  "display": "standalone",
+  "background_color": "#0d0d0d",
+  "theme_color": "#00d4a0",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
