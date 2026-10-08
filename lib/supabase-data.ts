@@ -89,11 +89,12 @@ export async function fetchStreak(userId: string): Promise<Streak> {
     .from("streaks")
     .select("*")
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
-    // First time — create a streak row
-    return upsertStreak(userId, { current_streak: 0, last_activity_date: "", badges: [], xp: 0 });
+    // First time — create a streak row with today's date
+    const today = new Date().toISOString().split("T")[0];
+    return upsertStreak(userId, { current_streak: 0, last_activity_date: today, badges: [], xp: 0 });
   }
   return { ...data, user_id: userId } as Streak;
 }
